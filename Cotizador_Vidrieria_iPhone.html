@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cotizador de Vidriería</title>
+<style>
+body{font-family:Arial,sans-serif;background:#f3f4f6;margin:0;padding:20px;color:#111827}
+.container{max-width:700px;margin:auto;background:white;padding:24px;border-radius:16px;box-shadow:0 4px 20px #0001}
+h1{margin-top:0}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+label{font-weight:bold;font-size:14px;display:block;margin-bottom:6px}
+input,select{width:100%;box-sizing:border-box;padding:12px;border:1px solid #d1d5db;border-radius:10px;font-size:16px}
+.section{margin:18px 0;padding:16px;border:1px solid #e5e7eb;border-radius:12px}
+.check{display:flex;gap:10px;align-items:center;margin:12px 0}
+.check input{width:auto}
+.result{background:#f9fafb;padding:18px;border-radius:12px}
+.row{display:flex;justify-content:space-between;margin:10px 0}
+.total{font-size:22px;font-weight:bold;border-top:1px solid #ddd;padding-top:14px}
+button{width:100%;padding:14px;border:0;border-radius:10px;background:#111827;color:white;font-size:16px;margin-top:15px;cursor:pointer}
+small{color:#6b7280}
+@media(max-width:600px){.grid{grid-template-columns:1fr}}
+</style>
+
+<style>
+* { box-sizing: border-box; }
+body { 
+  margin: 0; 
+  padding: 12px; 
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #f4f5f7;
+}
+.container, .card, main, .app {
+  max-width: 100% !important;
+}
+input, select, button {
+  font-size: 18px !important;
+  min-height: 48px;
+  border-radius: 12px;
+}
+button { width: 100%; margin-top: 10px; }
+label { font-size: 16px; }
+@media (max-width: 600px) {
+  h1 { font-size: 25px; }
+  h2 { font-size: 20px; }
+  .row, .grid, .form-row { 
+    display: block !important;
+  }
+  .row > *, .grid > *, .form-row > * {
+    width: 100% !important;
+    margin-bottom: 10px;
+  }
+  .result, .total, .card {
+    width: 100% !important;
+  }
+}
+</style>
+
+</head>
+<body>
+<div class="container">
+<h1>🪞 Cotizador de Vidriería</h1>
+<p><small>Ingresa las medidas en centímetros. Ejemplo: 80 × 40.</small></p>
+
+<div class="grid">
+<div>
+<label>Material</label>
+<select id="material">
+<option value="espejo">Espejo</option>
+<option value="vidrio">Vidrio</option>
+<option value="acrilico">Acrílico</option>
+</select>
+</div>
+<div>
+<label>Tipo / tarifa</label>
+<select id="tipo"></select>
+</div>
+</div>
+
+<div class="grid section">
+<div>
+<label>Ancho (cm)</label>
+<input id="ancho" type="number" min="0" step="1" placeholder="80">
+</div>
+<div>
+<label>Alto (cm)</label>
+<input id="alto" type="number" min="0" step="1" placeholder="40">
+</div>
+</div>
+
+<div class="section">
+<strong>Adicionales</strong>
+<label class="check"><input id="sand" type="checkbox"> Sandblasteado (+$80.000/m²)</label>
+<label class="check"><input id="baseGrande" type="checkbox"> Base grande (+$70.000)</label>
+<label class="check"><input id="basePequena" type="checkbox"> Base pequeña (+$40.000)</label>
+<label class="check"><input id="transporte" type="checkbox"> Transporte (+$50.000)</label>
+</div>
+
+<div class="result">
+<div class="row"><span>Área</span><strong id="area">$0</strong></div>
+<div class="row"><span>Valor por m²</span><strong id="valorM2">$0</strong></div>
+<div class="row"><span>Material</span><strong id="materialPrecio">$0</strong></div>
+<div class="row"><span>Adicionales</span><strong id="adicionales">$0</strong></div>
+<div class="row total"><span>TOTAL</span><strong id="total">$0</strong></div>
+</div>
+
+<button onclick="limpiar()">Limpiar</button>
+</div>
+
+<script>
+const precios={
+ espejo:[
+  ["3 mm",130000],
+  ["4 mm",180000],
+  ["Biselado 4 mm",360000]
+ ],
+ vidrio:[
+  ["4 mm",100000],
+  ["6 mm",160000],
+  ["Color",120000]
+ ],
+ acrilico:[
+  ["Acrílico",110000]
+ ]
+};
+
+const $=id=>document.getElementById(id);
+const money=n=>new Intl.NumberFormat("es-CO",{style:"currency",currency:"COP",maximumFractionDigits:0}).format(Math.round(n));
+
+function cargarTipos(){
+ const lista=precios[$("material").value];
+ $("tipo").innerHTML="";
+ lista.forEach((p,i)=>{
+  const o=document.createElement("option");
+  o.value=i;
+  o.textContent=p[0]+" — "+money(p[1])+"/m²";
+  $("tipo").appendChild(o);
+ });
+ calcular();
+}
+
+function calcular(){
+ const ancho=Number($("ancho").value)||0;
+ const alto=Number($("alto").value)||0;
+
+ // IMPORTANTE: las medidas son centímetros.
+ const area=(ancho/100)*(alto/100);
+
+ const material=$("material").value;
+ const indice=Number($("tipo").value)||0;
+ const tarifa=precios[material][indice][1];
+
+ let precioMaterial=area*tarifa;
+ let adicionales=0;
+
+ if(material==="espejo" && $("sand").checked){
+   precioMaterial += area*80000;
+ }
+ if($("baseGrande").checked) adicionales+=70000;
+ if($("basePequena").checked) adicionales+=40000;
+ if($("transporte").checked) adicionales+=50000;
+
+ $("area").textContent=area.toFixed(2).replace(".",",")+" m²";
+ $("valorM2").textContent=money(tarifa);
+ $("materialPrecio").textContent=money(precioMaterial);
+ $("adicionales").textContent=money(adicionales);
+ $("total").textContent=money(precioMaterial+adicionales);
+}
+
+function limpiar(){
+ $("ancho").value="";
+ $("alto").value="";
+ $("sand").checked=false;
+ $("baseGrande").checked=false;
+ $("basePequena").checked=false;
+ $("transporte").checked=false;
+ calcular();
+}
+
+$("material").addEventListener("change",cargarTipos);
+["tipo","ancho","alto","sand","baseGrande","basePequena","transporte"].forEach(id=>{
+ $(id).addEventListener("input",calcular);
+ $(id).addEventListener("change",calcular);
+});
+
+cargarTipos();
+</script>
+</body>
+</html>
